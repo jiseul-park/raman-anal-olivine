@@ -12,5 +12,8 @@ To eliminate cosmic rays, simply utilize the basic function in the Raon-Vu progr
 ### Export spectra as csv file without header
 Afterward, export the spectra as a csv file without a header. When saving the csv file, remember NOT to include the header! These steps are demonstrated in these images: 
 ![스크린샷 2023-07-02 오후 12 54 11](https://github.com/jiseul-park/raman-anal-olivine/assets/43870536/4949d632-bf90-4714-96b6-c5c6bd93bfc8)
-! DO NOT INCLUDE HEADER !
+
+### Caution!
+1. Save the CSV file without including headers! 
 ![스크린샷 2023-07-02 오후 12 57 28](https://github.com/jiseul-park/raman-anal-olivine/assets/43870536/daf2496a-2b04-4481-8bf9-181473f8b424)
+2. The file name should start with a letter and consist of only letters, numbers, and underscores (_).
