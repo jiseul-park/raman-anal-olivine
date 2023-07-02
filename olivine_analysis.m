@@ -45,25 +45,19 @@ for i = 1:numel(files)
     spectraNames{i} = specimenName;
 end
 
-
+correctedSpectra = cell(size(spectra)); % 보정된 스펙트럼을 저장할 셀 배열
 
 %% 2. 전처리
-% 2.1 전처리를 수행할 시료 선택
+
+% 2.1 baseline correction을 위한 파라미터 선택
 
 % 시료 이름 리스트 출력
 disp('List of available specimen names:');
 disp(spectraNames);
-selectedSpecimen = input('Select the specimen name: ', 's'); % 사용자에게 시료 이름 선택 요청
 
-% 선택된 시료 이름에 해당하는 스펙트럼 찾기
-selectedIndex = find(strcmp(spectraNames, selectedSpecimen), 1);
-if isempty(selectedIndex)
-    error('Specimen not found.');
-else
-    selectedSpectrum = spectra{selectedIndex}; % 선택된 시료의 스펙트럼
-end
-
-%% 2.2 baseline correction을 위한 파라미터 선택
+% 선택된 시료 번호에 해당되는 baseline corrected spectra 받아오기
+selectedIndex = input('Select the specimen number: ');
+selectedSpectrum = spectra{selectedIndex};
 
 % 사용자에게 lambda 배열 요청
 lambdaArray = input('Enter the lambda values for baseline correction [e.g., 1e5, 1e6], default: [1e4, 1e5, 1e6]: ');
@@ -97,6 +91,13 @@ for i = 1:numel(lambdaArray)
     end
 end
 %% 2.3 선택한 시료의 전체 위치에 대해 동일한 기준으로 baseline correction 수행
+% 시료 이름 리스트 출력
+disp('List of available specimen names:');
+disp(spectraNames);
+
+% 선택된 시료 번호에 해당되는 baseline corrected spectra 받아오기
+selectedIndex = input('Select the specimen number: ');
+selectedSpectrum = spectra{selectedIndex};
 
 % 사용자로부터 Raman band가 없는 Raman shift 범위 요청
 noBandRange = input('Enter the Raman shift range where no Raman band is present (e.g., [200 300]): ');
@@ -113,9 +114,8 @@ if isempty(lambda)
     lambda = 1e6;
 end
 
-correctedSpectra = cell(size(spectra)); % 보정된 스펙트럼을 저장할 셀 배열
-correctedSpectrum = zeros(size(selectedSpectrum));
 
+correctedSpectrum = zeros(size(selectedSpectrum));
 noiseLevels = zeros(size(selectedSpectrum, 1), 1); % 노이즈 레벨을 저장할 배열
 
 tic; % baseline correction에 걸리는 시간 확인
@@ -144,15 +144,10 @@ toc;
 % 시료 이름 리스트 출력
 disp('List of available specimen names:');
 disp(spectraNames);
-selectedSpecimen = input('Select the specimen name: ', 's'); % 사용자에게 시료 이름 선택 요청
 
-% 선택된 시료 이름에 해당하는 스펙트럼 찾기
-selectedIndex = find(strcmp(spectraNames, selectedSpecimen), 1);
-if isempty(selectedIndex)
-    error('Specimen not found.');
-else
-    selectedSpectrum = correctedSpectra{selectedIndex}; % 선택된 시료의 스펙트럼
-end
+% 선택된 시료 번호에 해당되는 baseline corrected spectra 받아오기
+selectedIndex = input('Select the specimen number: ');
+selectedSpectrum = correctedSpectra{selectedIndex};
 
 numSpectra = size(selectedSpectrum, 1);
 randomIndex = randi(numSpectra);
@@ -297,14 +292,24 @@ hold off;
 
 
 %% 3.2 선택한 시편의 전체 스펙트럼에 대해 수행
+
+% 시료 이름 리스트 출력
+disp('List of available specimen names:');
+disp(spectraNames);
+
+% 선택된 시료 번호에 해당되는 baseline corrected spectra 받아오기
+selectedIndex = input('Select the specimen number: ');
+selectedSpectrum = correctedSpectra{selectedIndex};
+
 % 사용자에게 fitResult를 보여줌
 disp(fitResult);
 
 % fitResult, position, height, width를 저장할 변수 초기화
-fitResults = cell(size(selectedSpectrum));
+fitResults = cell(size(selectedSpectrum, 1),1);
 position = zeros(numSpectra, numPeaks);
 height = zeros(numSpectra, numPeaks);
 width = zeros(numSpectra, numPeaks);
+gofs = cell(size(selectedSpectrum, 1), 1);
 
 % height의 초기 추정값을 저장할 배열
 initialHeights = zeros(1, numPeaks);
@@ -324,6 +329,8 @@ changeNumPeaks = input('Do you want to change the number of peaks? (y/n): ', 's'
 
 if strcmp(changeNumPeaks, 'n')
     numPeaks = length(peakPositions);
+else
+    numPeaks = input('Enter changed number of peaks?');
 end
 
 % 사용자에게 피크 너비를 바꿀 것인지 물어봄
@@ -420,27 +427,29 @@ for locationIndex = 1:numSpectra
     disp(fitResult);
     disp(gof);
 
-    % fitResult, position, height, width 저장
+    % fitResult, gof, position, height, width 저장
     fitResults{locationIndex} = fitResult;
     temp = coeffvalues(fitResult);
     position(locationIndex, :) = temp(numPeaks+1:2*numPeaks);
     height(locationIndex, :) = temp(1:numPeaks);
     width(locationIndex, :) = temp(2*numPeaks+1:end);
+    gofs{locationIndex} = gof;
 end
 
 % selectedSpectrum, selectedSpecimen, fitResults, position, height, width 저장
-results.selectedSpectrum{selectedIndex} = selectedSpectrum;
-results.selectedSpecimen{selectedIndex} = selectedSpecimen;
-results.fitResults{selectedIndex} = fitResults;
-results.position{selectedIndex} = position;
-results.height{selectedIndex} = height;
-results.width{selectedIndex} = width;
-results.noiseLevels{selectedIndex} = noiseLevels;
+results(selectedIndex).selectedSpectrum = selectedSpectrum;
+results(selectedIndex).selectedSpecimen = selectedSpecimen;
+results(selectedIndex).fitResults = fitResults;
+results(selectedIndex).position = position;
+results(selectedIndex).height = height;
+results(selectedIndex).width = width;
+results(selectedIndex).noiseLevels = noiseLevels;
+results(selectedIndex).gof = gofs;
 
 
 
-%% Visualization %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Plot all spectra in specific specimen
+%% 4. 시각화
+% 4.1 특정 시료의 모든 spectrum을 plot (plain or baseline corrected)
 
 % 시료 이름 처리
 plotPlainOrCorrectedSpectrum = input('Do you want to plot plain (p) or corrected (c) spectra (p/c): ', 's');
@@ -484,3 +493,89 @@ else
         title(['Spectrum of ' selectedSpecimen]);
     end
 end
+
+%% 4.2 특정 시료의 phw scatter plot
+% 시편 인덱스와 마커 종류 입력 받기
+disp('List of the specimen names:');
+disp(spectraNames);
+selectedSpecimenIndex = input('Enter the specimen index(es) to plot (e.g., [1 2]): ');
+
+disp("Available markers:");
+disp("1. o (circle)");
+disp("2. + (plus)");
+disp("3. * (asterisk)");
+disp("4. s (square)");
+disp("5. d (diamond)");
+markerIndex = input('Enter the marker index to use for selected specimens: ');
+
+% 주의! marker를 선택할 때!
+% 아래의 scatter 은 filled 옵션 (마커의 내부를 채우는 옵션)을 지정하였기 때문에, 
+% 면이 있는 마커(예: "o" 또는 "square")와 함께 사용하세요
+% 면이 없고 가장자리만 포함된 마커는 그려지지 않습니다(예를 들어"+", "*", ".", "x")
+% 가장자리만 포함된 마커는 edgecolor를 활용하는 등 옵션을 바꾸어야 합니다
+
+markers = {'o', '+', '*', 's', 'd'};
+
+figure;
+hold on;
+
+% axes 생성
+ax = gca;
+
+specimenNames = {};
+
+% 선택된 시편에 대해 데이터 시각화
+for i = 1:length(selectedSpecimenIndex)
+    specimenIndex = selectedSpecimenIndex(i);
+    thisResults = results(specimenIndex);
+    thisGof = cell2mat(thisResults.gof); % 구조체를 추출
+
+    % rsquare 값 추출
+    rsquare = zeros(numSpectra,1);
+    for locationIndex = 1:numSpectra
+        rsquare(locationIndex) = thisGof(locationIndex).rsquare;
+    end
+
+    % 필터링된 인덱스 추출
+    filteredIndices = rsquare >= 0.9;
+
+    % 데이터 추출
+    x = thisResults.position(:, 1); % position
+    y = thisResults.position(:, 2);
+    ratio = thisResults.height(:, 1) ./ thisResults.height(:, 2);
+
+    % 필터링된 데이터 추출
+    ratio = ratio(filteredIndices);
+    x = x(filteredIndices);
+    y = y(filteredIndices);
+    
+    
+    selectedMarker = markers{markerIndex(i)};
+    s = scatter(x, y, 50, ratio, 'filled', 'Marker', selectedMarker);
+    alpha(s, .5) % 마커의 투명도 조절 (면이 있는 경우만 해당)
+
+    % 시편 이름 저장
+    specimenNames{i} = spectraNames{specimenIndex};
+    hold on
+end
+
+% 축 레이블 및 컬러바 추가
+xlabel('Peak Position 1');
+ylabel('Peak Position 2');
+colormap('jet');
+colorbar;
+
+% 그리기 옵션 설정
+axis tight;
+grid on;
+
+% 시편 이름을 포함한 legend 추가
+legend(ax, specimenNames);
+
+% 시편 인덱스와 마커 종류 출력
+disp("Selected specimens:");
+disp(selectedIndex);
+disp("Selected marker:");
+disp(selectedMarker);
+
+hold off;
