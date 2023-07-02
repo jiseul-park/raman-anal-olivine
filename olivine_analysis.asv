@@ -245,8 +245,8 @@ for i = 1:numPeaks
     upperBoundPosition = peakPositions(i) + positionThreshold;
     
     % 상한과 하한 범위 내에 있는 데이터 선택
-    indicesInRange = find(ramanShift >= lowerBoundPosition & ramanShift <= upperBoundPosition);
-    spectrumInRange = randomSpectrum(indicesInRange);
+    indicesInRange = find(fittingShift >= lowerBoundPosition & fittingShift <= upperBoundPosition);
+    spectrumInRange = selectedSpectrum(indicesInRange);
     
     % 최대값을 찾아 초기 추정값으로 설정
     initialHeights(i) = max(spectrumInRange);
@@ -315,6 +315,8 @@ useExistingFittingRange = input('Do you want to change the fitting range? (y/n):
 if strcmp(useExistingFittingRange, 'y')
     fittingRange = input('Enter the Raman shift range for fitting e.g., [500 2000]: ');
     fittingIndices = find(ramanShift >= fittingRange(1) & ramanShift <= fittingRange(2));
+    fittingShift = ramanShift(fittingIndices);
+    fittingSpectrum = spectrum(fittingIndices);
 else
 
 end
@@ -377,12 +379,11 @@ f = fittype(funcStr); % fit 함수 정의
 % 입력받은 position의 상한과 하한 범위를 설정
 positionThreshold = input('Enter the position threshold: ');
 
-for locationIndex = 1:numSpectra
-    fprintf('Fitting spectrum %d/%d\n', locationIndex, numSpectra);
+for selectedIndex = 1:numSpectra
+    fprintf('Fitting spectrum %d/%d\n', selectedIndex, numSpectra);
     
-    thisSpectrum= selectedSpectrum(locationIndex, :);
-    fittingShift = ramanShift(fittingIndices);
-    fittingSpectrum = thisSpectrum(fittingIndices);
+    spectrum = correctedSpectrum(selectedIndex, :);
+
     % 각 피크에 대해 상한과 하한 범위 내에서 최대값을 찾음
     for i = 1:numPeaks
         lowerBoundPosition = peakPositions(i) - positionThreshold;
@@ -421,21 +422,21 @@ for locationIndex = 1:numSpectra
     disp(gof);
 
     % fitResult, position, height, width 저장
-    fitResults{locationIndex} = fitResult;
+    fitResults{selectedIndex} = fitResult;
     temp = coeffvalues(fitResult);
-    position(locationIndex, :) = temp(numPeaks+1:2*numPeaks);
-    height(locationIndex, :) = temp(1:numPeaks);
-    width(locationIndex, :) = temp(2*numPeaks+1:end);
+    position(selectedIndex, :) = temp(numPeaks+1:2*numPeaks);
+    height(selectedIndex, :) = temp(1:numPeaks);
+    width(selectedIndex, :) = temp(2*numPeaks+1:end);
 end
 
 % selectedSpectrum, selectedSpecimen, fitResults, position, height, width 저장
-results.selectedSpectrum{selectedIndex} = selectedSpectrum;
-results.selectedSpecimen{selectedIndex} = selectedSpecimen;
-results.fitResults{selectedIndex} = fitResults;
-results.position{selectedIndex} = position;
-results.height{selectedIndex} = height;
-results.width{selectedIndex} = width;
-results.noiseLevels{selectedIndex} = noiseLevels;
+results.selectedSpectrum = selectedSpectrum;
+results.selectedSpecimen = selectedSpecimen;
+results.fitResults = fitResults;
+results.position = position;
+results.height = height;
+results.width = width;
+results.noiseLevels = noiseLevels;
 
 
 
